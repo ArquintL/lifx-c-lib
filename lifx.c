@@ -123,17 +123,6 @@ int close_lifx_lib() {
 static int createHeader(bulb_service_t *p_bulb, const packet_config_t *p_config, lx_protocol_header_t *p_header) {
     bzero(p_header, sizeof(lx_protocol_header_t));
 
-    /*
-    printf("header [%lu]\n", sizeof(lx_protocol_header_t));
-    for (int i = 0; i < sizeof(lx_protocol_header_t); i++) {
-        if (i == 8 | i == 24 | i == 36) {
-            printf("|");
-        }
-        printf("%02X", ((uint8_t *)p_header)[i]);
-    }
-    printf("\n");
-    */
-
 	*p_header = (lx_protocol_header_t) {
     	// frame
  		.size = sizeof(lx_protocol_header_t) + p_config->payload_size,
@@ -159,17 +148,6 @@ static int createHeader(bulb_service_t *p_bulb, const packet_config_t *p_config,
         .reserved1 = 0,
         .reserved2 = 0,
     };
-
-    /*
-    printf("header [%lu]\n", sizeof(lx_protocol_header_t));
-    for (int i = 0; i < sizeof(lx_protocol_header_t); i++) {
-        if (i == 8 | i == 24 | i == 36) {
-            printf("|");
-        }
-        printf("%02X", ((uint8_t *)p_header)[i]);
-    }
-    printf("\n");
-    */
 
     return 0;
 }
@@ -213,6 +191,7 @@ static int sendPacket(bulb_service_t *p_bulb, const packet_config_t *p_config) {
 	}
 	assert(((uint16_t *)p_buffer)[0] == packet_size);
 
+    #ifdef DEBUG
 	printf("packet [%d]\n", packet_size);
 	for (int i = 0; i < packet_size; i++) {
     	if (i == 8 | i == 24 | i == 36) {
@@ -221,6 +200,7 @@ static int sendPacket(bulb_service_t *p_bulb, const packet_config_t *p_config) {
     	printf("%02X", p_buffer[i]);
     }
     printf("\n");
+    #endif
     
 
 	int res = sendto(udp_socket, p_buffer, packet_size, 0, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in));
@@ -262,6 +242,7 @@ static int recvPacketWithServerAddr(bulb_service_t *p_bulb, struct sockaddr_in *
     	return -1;
     }
 
+    #ifdef DEBUG
     printf("Response buffer[%d]\n", res);
     for (int i = 0; i < res; i++) {
         if (i == 8 | i == 24 | i == 36) {
@@ -270,9 +251,10 @@ static int recvPacketWithServerAddr(bulb_service_t *p_bulb, struct sockaddr_in *
         printf("%02X", p_buffer[i]);
     }
     printf("\n");
+    #endif
 
     // check length
-    if (res < sizeof(*p_header)) {
+    if (res < (int)sizeof(*p_header)) {
     	printf("unexpected response length\n");
     	return -1;
     }
@@ -433,7 +415,7 @@ int freeBulbs(bulb_service_t **pp_bulbs) {
     return 0;
 }
 
-int getPower(bulb_service_t *bulb, bool *p_on) {
+int getPower(bulb_service_t *p_bulb, bool *p_on) {
     packet_config_t config = {
         .payload_size = 0,
         .p_payload = NULL,
@@ -443,7 +425,7 @@ int getPower(bulb_service_t *bulb, bool *p_on) {
         .type = MSG_TYPE_GET_POWER
     };
 
-    if (sendPacket(bulb, &config)) {
+    if (sendPacket(p_bulb, &config)) {
         printf("send getPower packet failed\n");
         return -1;
     }
@@ -451,7 +433,7 @@ int getPower(bulb_service_t *bulb, bool *p_on) {
     lx_protocol_header_t res_header;
     uint8_t *p_res_payload = NULL;
     uint16_t res_payload_size;
-    if (recvPacketWithRetry(bulb, &res_header, &p_res_payload, &res_payload_size)) {
+    if (recvPacketWithRetry(p_bulb, &res_header, &p_res_payload, &res_payload_size)) {
         printf("receive getPower packet failed\n");
         return -1;
     }
@@ -477,7 +459,7 @@ int getPower(bulb_service_t *bulb, bool *p_on) {
     return 0;
 }
 
-int setPower(bulb_service_t *bulb, bool on, uint32_t duration) {
+int setPower(bulb_service_t *p_bulb, bool on, uint32_t duration) {
     // create payload
     uint8_t p_payload[6];
     // put level
@@ -499,7 +481,7 @@ int setPower(bulb_service_t *bulb, bool on, uint32_t duration) {
         .type = MSG_TYPE_SET_POWER
     };
 
-    if (sendPacket(bulb, &config)) {
+    if (sendPacket(p_bulb, &config)) {
         printf("send setPower packet failed\n");
         return -1;
     }
@@ -507,7 +489,7 @@ int setPower(bulb_service_t *bulb, bool on, uint32_t duration) {
     lx_protocol_header_t res_header;
     uint8_t *p_res_payload = NULL;
     uint16_t res_payload_size;
-    if (recvPacketWithRetry(bulb, &res_header, &p_res_payload, &res_payload_size)) {
+    if (recvPacketWithRetry(p_bulb, &res_header, &p_res_payload, &res_payload_size)) {
         printf("receive setPower packet failed\n");
         return -1;
     }
@@ -523,8 +505,8 @@ int setPower(bulb_service_t *bulb, bool on, uint32_t duration) {
 	return 0;
 }
 
-/** @param label 32 byte string and 1 null character as terminator */
-int getColor(bulb_service_t *bulb, bool *p_on, color_t *color, char label[LIFX_LABEL_LENGTH + 1]) {
+/** @param p_label 32 byte string and 1 null character as terminator */
+int getColor(bulb_service_t *p_bulb, bool *p_on, color_t *p_color, char p_label[LIFX_LABEL_LENGTH + 1]) {
     packet_config_t config = {
         .payload_size = 0,
         .p_payload = NULL,
@@ -534,7 +516,7 @@ int getColor(bulb_service_t *bulb, bool *p_on, color_t *color, char label[LIFX_L
         .type = MSG_TYPE_GET_LIGHT
     };
 
-    if (sendPacket(bulb, &config)) {
+    if (sendPacket(p_bulb, &config)) {
         printf("send getColor packet failed\n");
         return -1;
     }
@@ -542,7 +524,7 @@ int getColor(bulb_service_t *bulb, bool *p_on, color_t *color, char label[LIFX_L
     lx_protocol_header_t res_header;
     uint8_t *p_res_payload = NULL;
     uint16_t res_payload_size;
-    if (recvPacketWithRetry(bulb, &res_header, &p_res_payload, &res_payload_size)) {
+    if (recvPacketWithRetry(p_bulb, &res_header, &p_res_payload, &res_payload_size)) {
         printf("receive getColor packet failed\n");
         return -1;
     }
@@ -557,20 +539,20 @@ int getColor(bulb_service_t *bulb, bool *p_on, color_t *color, char label[LIFX_L
         return -1;
     }
 
-    color->hue =    ((uint16_t)p_res_payload[0] << 0) + 
+    p_color->hue =    ((uint16_t)p_res_payload[0] << 0) + 
                     ((uint16_t)p_res_payload[1] << 8);
-    color->saturation = ((uint16_t)p_res_payload[2] << 0) + 
+    p_color->saturation = ((uint16_t)p_res_payload[2] << 0) + 
                         ((uint16_t)p_res_payload[3] << 8);
-    color->brightness = ((uint16_t)p_res_payload[4] << 0) + 
+    p_color->brightness = ((uint16_t)p_res_payload[4] << 0) + 
                         ((uint16_t)p_res_payload[5] << 8);
-    color->kelvin = ((uint16_t)p_res_payload[6] << 0) + 
+    p_color->kelvin = ((uint16_t)p_res_payload[6] << 0) + 
                     ((uint16_t)p_res_payload[7] << 8);
 
     uint16_t power =    ((uint16_t)p_res_payload[10] << 0) + 
                         ((uint16_t)p_res_payload[11] << 8);
 
-    label[LIFX_LABEL_LENGTH] = '\0'; // NULL terminator
-    memcpy(label, p_res_payload + 12, LIFX_LABEL_LENGTH);
+    p_label[LIFX_LABEL_LENGTH] = '\0'; // NULL terminator
+    memcpy(p_label, p_res_payload + 12, LIFX_LABEL_LENGTH);
 
     *p_on = power == 0 ? false : true;
 
@@ -580,7 +562,7 @@ int getColor(bulb_service_t *bulb, bool *p_on, color_t *color, char label[LIFX_L
     return 0;
 }
 
-int setColor(bulb_service_t *bulb, color_t color, uint32_t duration) {
+int setColor(bulb_service_t *p_bulb, color_t color, uint32_t duration) {
     // create payload
     uint8_t p_payload[13];
     // put color
@@ -607,7 +589,7 @@ int setColor(bulb_service_t *bulb, color_t color, uint32_t duration) {
         .type = MSG_TYPE_SET_COLOR,
     };
 
-    if (sendPacket(bulb, &config)) {
+    if (sendPacket(p_bulb, &config)) {
         printf("send setColor packet failed\n");
         return -1;
     }
@@ -615,7 +597,7 @@ int setColor(bulb_service_t *bulb, color_t color, uint32_t duration) {
     lx_protocol_header_t res_header;
     uint8_t *p_res_payload = NULL;
     uint16_t res_payload_size;
-    if (recvPacketWithRetry(bulb, &res_header, &p_res_payload, &res_payload_size)) {
+    if (recvPacketWithRetry(p_bulb, &res_header, &p_res_payload, &res_payload_size)) {
         printf("receive setColor packet failed\n");
         return -1;
     }
