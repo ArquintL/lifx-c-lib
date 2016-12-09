@@ -23,3 +23,5 @@ This library is not, in any way, affiliated or related to LiFi Labs, Inc. Use it
 Use `make` to build `app.c` and the library, resulting in an executable called `app`.
 
 `make debug` enables more console output, which will currently print all sent & received packets.
+
+`make clean` removes the executable and all intermediate files.
