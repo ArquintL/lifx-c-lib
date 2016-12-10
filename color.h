@@ -1,3 +1,8 @@
+/*
+**  LIFX C Library
+**  Copyright 2016 Linard Arquint
+*/
+
 #ifndef COLOR_H
 #define COLOR_H
 

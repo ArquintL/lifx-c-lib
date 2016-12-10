@@ -1,3 +1,8 @@
+/*
+**  LIFX C Library
+**  Copyright 2016 Linard Arquint
+*/
+
 #ifndef BULB_H
 #define BULB_H
 

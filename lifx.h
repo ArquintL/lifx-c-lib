@@ -1,3 +1,8 @@
+/*
+**  LIFX C Library
+**  Copyright 2016 Linard Arquint
+*/
+
 #ifndef LIFX_H
 #define LIFX_H
 

@@ -1,3 +1,8 @@
+/*
+**  LIFX C Library
+**  Copyright 2016 Linard Arquint
+*/
+
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>

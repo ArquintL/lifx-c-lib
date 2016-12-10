@@ -1,3 +1,8 @@
+/*
+**  LIFX C Library
+**  Copyright 2016 Linard Arquint
+*/
+
 #include <stdio.h>
 #include <unistd.h>
 
