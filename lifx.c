@@ -238,7 +238,7 @@ static int recvPacketWithServerAddr(bulb_service_t *p_bulb, struct sockaddr_in *
     }
 
     int res = recvfrom(udp_socket, p_buffer, sizeof(p_buffer), 0, (struct sockaddr *)p_server_addr, &server_addr_size);
-    if (res == -1 && (errno == EAGAIN | errno == EWOULDBLOCK)) {
+    if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
         // timeout
         return 1;
     }
