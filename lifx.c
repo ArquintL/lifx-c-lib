@@ -468,7 +468,7 @@ int setPower(bulb_service_t *p_bulb, bool on, uint32_t duration) {
     // create payload
     uint8_t p_payload[6];
     // put level
-    uint16_t level = on ? 0 : 65535;
+    uint16_t level = on ? 65535 : 0;
     p_payload[0] = (level >> 0) & 0xFF;
     p_payload[1] = (level >> 8) & 0xFF;
     // put duration
