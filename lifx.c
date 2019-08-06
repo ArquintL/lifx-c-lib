@@ -238,7 +238,7 @@ static int recvPacketWithServerAddr(bulb_service_t *p_bulb, struct sockaddr_in *
     }
 
     int res = recvfrom(udp_socket, p_buffer, sizeof(p_buffer), 0, (struct sockaddr *)p_server_addr, &server_addr_size);
-    if (res == -1 && (errno == EAGAIN | errno == EWOULDBLOCK)) {
+    if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
         // timeout
         return 1;
     }
@@ -468,7 +468,7 @@ int setPower(bulb_service_t *p_bulb, bool on, uint32_t duration) {
     // create payload
     uint8_t p_payload[6];
     // put level
-    uint16_t level = on ? 0 : 65535;
+    uint16_t level = on ? 65535 : 0;
     p_payload[0] = (level >> 0) & 0xFF;
     p_payload[1] = (level >> 8) & 0xFF;
     // put duration
